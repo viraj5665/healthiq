@@ -21,6 +21,24 @@ export type RiskLevel = 'low' | 'moderate' | 'high' | 'critical' | 'all'
 export type SortField = 'score' | 'risk_level' | 'age'
 export type SortDir = 'asc' | 'desc'
 
+export interface ManualPatientIn {
+  date_of_birth: string
+  gender: string
+  num_encounters: number
+  num_er_visits: number
+  conditions: string
+}
+
+export interface ManualPatientResult {
+  patient_id: string
+  score: number
+  risk_level: string
+  model_version: string
+  explanation: ShapFeature[]
+  features: Record<string, number>
+  patients_in_model: number
+}
+
 export interface Alert {
   id: string
   alert_type: string

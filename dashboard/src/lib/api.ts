@@ -1,4 +1,4 @@
-import type { RiskScore, BedForecast, Alert, ReportMeta, ReportFull } from '../types'
+import type { RiskScore, BedForecast, Alert, ReportMeta, ReportFull, ManualPatientIn, ManualPatientResult } from '../types'
 
 const BASE = '/api'
 
@@ -33,6 +33,17 @@ export async function fetchBedForecasts(): Promise<BedForecast[]> {
 export async function runForecast(): Promise<void> {
   const res = await fetch(`${BASE}/operations/forecast`, { method: 'POST' })
   if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+}
+
+export async function createManualPatient(body: ManualPatientIn): Promise<ManualPatientResult> {
+  const res = await fetch(`${BASE}/patients/manual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.detail ?? `${res.status} ${res.statusText}`)
+  return data
 }
 
 export async function fetchAlerts(limit = 200): Promise<Alert[]> {

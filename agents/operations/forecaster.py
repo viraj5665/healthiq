@@ -18,12 +18,31 @@ Occupancy estimate = predicted_admissions × avg_los_days.
   Prophet or statsmodels when volume grows to >30 days of history.
 """
 
+import hashlib
+import random
 from dataclasses import dataclass
 from datetime import date, timedelta
 
 SPARSE_THRESHOLD = 14   # days with admission data required for moving average
 WARNING_UTILIZATION = 0.80   # fraction of capacity → warning
 CRITICAL_UTILIZATION = 1.00  # fraction of capacity → critical
+
+# Day-of-week demand multipliers (0=Monday … 6=Sunday)
+_DOW_MULTIPLIER = {
+    0: 1.30,  # Monday   — post-weekend surge
+    1: 1.30,  # Tuesday  — peak
+    2: 1.00,  # Wednesday
+    3: 1.00,  # Thursday
+    4: 0.90,  # Friday   — slight drop
+    5: 0.75,  # Saturday — weekend trough
+    6: 0.75,  # Sunday
+}
+
+
+def _day_noise(d: date) -> float:
+    """Deterministic ±5 % noise seeded by date so re-runs are stable."""
+    seed = int(hashlib.md5(str(d).encode()).hexdigest()[:8], 16)
+    return random.Random(seed).uniform(0.95, 1.05)
 
 
 @dataclass
@@ -94,11 +113,13 @@ def compute_forecasts(
 
     results = []
     for d in forecast_dates:
-        occupancy = round(daily_pred * los, 2)
+        multiplier = _DOW_MULTIPLIER[d.weekday()] * _day_noise(d)
+        admissions = round(daily_pred * multiplier, 2)
+        occupancy  = round(admissions * los, 2)
         results.append(
             DayForecast(
                 date=d,
-                predicted_admissions=round(daily_pred, 2),
+                predicted_admissions=admissions,
                 predicted_occupancy=occupancy,
                 capacity=capacity,
                 status=classify_status(occupancy, capacity),
