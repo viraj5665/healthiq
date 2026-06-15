@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     database_url: str
     anthropic_api_key: str = ""
-    fhir_server_url: str = "http://localhost:8080/fhir"
+    fhir_server_url: str = "https://hapi.fhir.org/baseR4"
 
 
 settings = Settings()
