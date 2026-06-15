@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ReferenceLine, ResponsiveContainer, defs, linearGradient, stop,
+  ReferenceLine, ResponsiveContainer,
 } from 'recharts'
 import { fetchBedForecasts, runForecast } from '../lib/api'
 import type { BedForecast as BedForecastType } from '../types'
