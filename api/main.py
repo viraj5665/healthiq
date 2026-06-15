@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import health, ingest, nlp, risk
-from api.routers import operations, alerts
+from api.routers import operations, alerts, reports
 
 
 @asynccontextmanager
@@ -35,3 +35,4 @@ app.include_router(risk.router)
 app.include_router(nlp.router)
 app.include_router(operations.router)
 app.include_router(alerts.router)
+app.include_router(reports.router)
