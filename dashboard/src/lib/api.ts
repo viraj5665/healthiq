@@ -1,4 +1,4 @@
-import type { RiskScore, BedForecast } from '../types'
+import type { RiskScore, BedForecast, Alert, ReportMeta, ReportFull } from '../types'
 
 const BASE = '/api'
 
@@ -33,6 +33,40 @@ export async function fetchBedForecasts(): Promise<BedForecast[]> {
 export async function runForecast(): Promise<void> {
   const res = await fetch(`${BASE}/operations/forecast`, { method: 'POST' })
   if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+}
+
+export async function fetchAlerts(limit = 200): Promise<Alert[]> {
+  const res = await fetch(`${BASE}/alerts?status=active&limit=${limit}`)
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+export async function runAlertCheck(): Promise<{ created: number; skipped_duplicates: number }> {
+  const res = await fetch(`${BASE}/alerts/check`, { method: 'POST' })
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+export async function fetchReports(): Promise<ReportMeta[]> {
+  const res = await fetch(`${BASE}/reports`)
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+export async function fetchReport(id: string): Promise<ReportFull> {
+  const res = await fetch(`${BASE}/reports/${id}`)
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+export async function generateReport(): Promise<ReportFull> {
+  const res = await fetch(`${BASE}/reports/generate`, { method: 'POST' })
+  const body = await res.json()
+  if (!res.ok) {
+    const detail = body?.detail ?? `${res.status} ${res.statusText}`
+    throw new Error(detail)
+  }
+  return body
 }
 
 export const RISK_ORDER: Record<string, number> = {

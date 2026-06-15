@@ -21,6 +21,31 @@ export type RiskLevel = 'low' | 'moderate' | 'high' | 'critical' | 'all'
 export type SortField = 'score' | 'risk_level' | 'age'
 export type SortDir = 'asc' | 'desc'
 
+export interface Alert {
+  id: string
+  alert_type: string
+  severity: 'critical' | 'urgent' | 'warning'
+  title: string
+  message: string
+  status: string
+  patient_id: string | null
+  risk_score_id: string | null
+  triggered_at: string
+  metadata: Record<string, unknown> | null
+}
+
+export interface ReportMeta {
+  id: string
+  generated_at: string
+  model_version: string
+  duration_seconds: number | null
+}
+
+export interface ReportFull extends ReportMeta {
+  report_markdown: string
+  summary_data: Record<string, unknown> | null
+}
+
 export interface BedForecast {
   id: string
   forecast_date: string
