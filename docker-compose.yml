@@ -37,6 +37,7 @@ services:
       - ./api:/app/api
       - ./agents:/app/agents
       - ./analytics:/app/analytics
+      - ./data:/app/data
 
 volumes:
   postgres_data:

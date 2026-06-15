@@ -156,6 +156,124 @@ def map_encounter(resource: dict, patient_fhir_to_db: dict[str, str]) -> dict | 
     }
 
 
+def map_condition(
+    resource: dict,
+    patient_fhir_to_db: dict[str, str],
+    encounter_fhir_to_db: dict[str, str],
+) -> dict | None:
+    """FHIR Condition → conditions table row dict. Returns None if patient not in DB or no code."""
+    fhir_id = resource.get("id", "")
+
+    # Code — required (SNOMED-CT in Synthea)
+    codings = _get(resource, "code", "coding", default=[])
+    code = _get(codings, 0, "code") if codings else None
+    if not code:
+        return None
+    code_system = _get(codings, 0, "system")
+    display = (_get(codings, 0, "display") or _get(resource, "code", "text", default=""))[:512] or None
+
+    # Patient — required
+    patient_ref = _get(resource, "subject", "reference", default="")
+    patient_fhir_id = patient_ref.split("/")[-1] if "/" in patient_ref else patient_ref
+    patient_db_id = patient_fhir_to_db.get(patient_fhir_id)
+    if not patient_db_id:
+        return None
+
+    # Encounter — optional
+    encounter_ref = _get(resource, "encounter", "reference", default="")
+    encounter_fhir_id = encounter_ref.split("/")[-1] if "/" in encounter_ref else encounter_ref
+    encounter_db_id = encounter_fhir_to_db.get(encounter_fhir_id)
+
+    # Clinical status
+    status_codings = _get(resource, "clinicalStatus", "coding", default=[])
+    clinical_status = _get(status_codings, 0, "code") if status_codings else None
+
+    # Category
+    cat_codings = _get(resource, "category", 0, "coding", default=[])
+    category = _get(cat_codings, 0, "code") if cat_codings else None
+
+    # Onset — try DateTime then Period
+    onset_raw = resource.get("onsetDateTime") or _get(resource, "onsetPeriod", "start")
+    # Abatement
+    abatement_raw = resource.get("abatementDateTime") or _get(resource, "abatementPeriod", "end")
+
+    return {
+        "fhir_id": fhir_id,
+        "patient_id": patient_db_id,
+        "encounter_id": encounter_db_id,
+        "clinical_status": clinical_status,
+        "code": code,
+        "code_system": code_system,
+        "display": display,
+        "category": category,
+        "onset_date": _parse_dt(onset_raw),
+        "abatement_date": _parse_dt(abatement_raw),
+        "recorded_date": _parse_dt(resource.get("recordedDate")),
+    }
+
+
+def map_medication_request(
+    resource: dict,
+    patient_fhir_to_db: dict[str, str],
+    encounter_fhir_to_db: dict[str, str],
+) -> dict | None:
+    """FHIR MedicationRequest → medication_requests table row dict."""
+    fhir_id = resource.get("id", "")
+
+    # Medication code — prefer medicationCodeableConcept
+    med_code = med_system = med_display = None
+    if "medicationCodeableConcept" in resource:
+        med_codings = _get(resource, "medicationCodeableConcept", "coding", default=[])
+        med_code = _get(med_codings, 0, "code") if med_codings else None
+        med_system = _get(med_codings, 0, "system") if med_codings else None
+        med_display = (
+            _get(med_codings, 0, "display")
+            or _get(resource, "medicationCodeableConcept", "text")
+        )
+        if med_display:
+            med_display = med_display[:512]
+    if not med_code:
+        return None
+
+    # Patient — required
+    patient_ref = _get(resource, "subject", "reference", default="")
+    patient_fhir_id = patient_ref.split("/")[-1] if "/" in patient_ref else patient_ref
+    patient_db_id = patient_fhir_to_db.get(patient_fhir_id)
+    if not patient_db_id:
+        return None
+
+    # Encounter — optional
+    encounter_ref = _get(resource, "encounter", "reference", default="")
+    encounter_fhir_id = encounter_ref.split("/")[-1] if "/" in encounter_ref else encounter_ref
+    encounter_db_id = encounter_fhir_to_db.get(encounter_fhir_id)
+
+    # Dosage (first instruction)
+    dosage = _get(resource, "dosageInstruction", 0, default={})
+    dosage_text = dosage.get("text") if isinstance(dosage, dict) else None
+    dosage_route = (
+        _get(dosage, "route", "coding", 0, "display")
+        or _get(dosage, "route", "text")
+    ) if isinstance(dosage, dict) else None
+    dosage_timing = (
+        _get(dosage, "timing", "code", "text")
+    ) if isinstance(dosage, dict) else None
+
+    return {
+        "fhir_id": fhir_id,
+        "patient_id": patient_db_id,
+        "encounter_id": encounter_db_id,
+        "status": resource.get("status", "unknown"),
+        "intent": resource.get("intent", "order"),
+        "medication_code": med_code,
+        "medication_system": med_system,
+        "medication_display": med_display,
+        "authored_on": _parse_dt(resource.get("authoredOn")),
+        "dosage_text": dosage_text,
+        "dosage_route": str(dosage_route)[:128] if dosage_route else None,
+        "dosage_timing": str(dosage_timing)[:64] if dosage_timing else None,
+    }
+
+
 def map_observation(
     resource: dict,
     patient_fhir_to_db: dict[str, str],

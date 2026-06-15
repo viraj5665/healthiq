@@ -71,3 +71,6 @@ htmlcov/
 # Distribution
 *.tar.gz
 *.zip
+
+# Synthea — generated patient data and cloned repo (large, never commit)
+data/synthea/
