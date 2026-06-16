@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,12 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routers import health, ingest, nlp, risk
 from api.routers import operations, alerts, reports, patients
 
+_DEV_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+_EXTRA = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+ALLOWED_ORIGINS = _DEV_ORIGINS + _EXTRA
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     yield
-    # Shutdown
 
 
 app = FastAPI(
@@ -23,7 +26,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

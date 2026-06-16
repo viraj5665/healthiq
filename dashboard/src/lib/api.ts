@@ -1,6 +1,8 @@
 import type { RiskScore, BedForecast, Alert, ReportMeta, ReportFull, ManualPatientIn, ManualPatientResult } from '../types'
 
-const BASE = '/api'
+// In dev: Vite proxy rewrites /api/* → localhost:8000/*
+// In prod: set VITE_API_BASE=https://your-railway-app.up.railway.app in Vercel env vars
+const BASE = import.meta.env.VITE_API_BASE ?? '/api'
 
 export async function fetchRiskScores(limit = 650): Promise<RiskScore[]> {
   const res = await fetch(`${BASE}/risk/scores?limit=${limit}`)
