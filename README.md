@@ -208,6 +208,40 @@ Copy `.env.example` to `.env` and fill in:
 
 ---
 
+## Deployment
+
+### Backend → Render
+
+The repo includes a `render.yaml` blueprint. One-time setup:
+
+1. Go to [render.com](https://render.com) → **New** → **Blueprint**
+2. Connect the `viraj5665/healthiq` GitHub repo
+3. Render detects `render.yaml` and creates:
+   - `healthiq-api` — Python web service (FastAPI)
+   - `healthiq-db` — PostgreSQL 16 (free tier)
+4. After deploy, open the service → **Environment** → add:
+   - `ANTHROPIC_API_KEY` = your key from console.anthropic.com
+   - `CORS_ORIGINS` = your Vercel frontend URL (add after Vercel deploy)
+5. Your API is live at `https://healthiq-api.onrender.com`
+
+The `scripts/migrate.py` runs automatically on every deploy before Uvicorn starts, applying any new SQL migrations.
+
+### Frontend → Vercel
+
+```bash
+cd dashboard
+vercel                     # follow prompts, ~60 seconds
+```
+
+Then in the Vercel dashboard → **Settings** → **Environment Variables**:
+- `VITE_API_BASE` = `https://healthiq-api.onrender.com`
+
+Redeploy for the variable to take effect. The SPA rewrite rule in `vercel.json` handles React Router client-side routing.
+
+> **Note:** Render's free-tier web services spin down after 15 min of inactivity. The first request after sleep takes ~30 s to cold-start. Upgrade to Starter ($7/mo) to keep it always-on.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

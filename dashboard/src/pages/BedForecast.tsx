@@ -285,7 +285,7 @@ export default function BedForecast() {
               content={(props) => (
                 <CustomTooltip
                   active={props.active}
-                  payload={props.payload as Array<{ value: number; dataKey: string }> | undefined}
+                  payload={props.payload as unknown as Array<{ value: number; dataKey: string }> | undefined}
                   label={props.label as string | undefined}
                   simCapacity={simCapacity}
                 />
