@@ -210,35 +210,54 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Deployment
 
-### Backend → Render
+### Database → Neon (free PostgreSQL)
 
-The repo includes a `render.yaml` blueprint. One-time setup:
+1. Sign up at [neon.tech](https://neon.tech) (free, no credit card)
+2. **New Project** → name it `healthiq`
+3. Copy the **Connection string** from the Connect dialog — you'll need it next
 
-1. Go to [render.com](https://render.com) → **New** → **Blueprint**
+### Backend → Render (free web service)
+
+1. Go to [render.com](https://render.com) → **New +** → **Web Service**
 2. Connect the `viraj5665/healthiq` GitHub repo
-3. Render detects `render.yaml` and creates:
-   - `healthiq-api` — Python web service (FastAPI)
-   - `healthiq-db` — PostgreSQL 16 (free tier)
-4. After deploy, open the service → **Environment** → add:
-   - `ANTHROPIC_API_KEY` = your key from console.anthropic.com
-   - `CORS_ORIGINS` = your Vercel frontend URL (add after Vercel deploy)
-5. Your API is live at `https://healthiq-api.onrender.com`
+3. Set:
+   - **Runtime:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `python scripts/migrate.py && uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance Type:** Free
+4. Under **Advanced → Environment Variables** add:
+   - `DATABASE_URL` = *(your Neon connection string)*
+   - `ANTHROPIC_API_KEY` = *(key from console.anthropic.com)*
+   - `CORS_ORIGINS` = *(your Vercel frontend URL)*
+   - `APP_ENV` = `production`
+   - `APP_SECRET_KEY` = *(any random 32-char string)*
+5. Click **Create Web Service** — first deploy ~4 min
 
-The `scripts/migrate.py` runs automatically on every deploy before Uvicorn starts, applying any new SQL migrations.
+`scripts/migrate.py` runs on every deploy before Uvicorn starts, applying all SQL migrations idempotently.
+
+After the service is live, seed the data:
+
+```bash
+curl -X POST https://healthiq-api.onrender.com/risk/score
+curl -X POST https://healthiq-api.onrender.com/operations/forecast
+curl -X POST https://healthiq-api.onrender.com/alerts/check
+```
 
 ### Frontend → Vercel
 
 ```bash
 cd dashboard
-vercel                     # follow prompts, ~60 seconds
+vercel --prod    # already deployed; run again after updating env vars
 ```
 
-Then in the Vercel dashboard → **Settings** → **Environment Variables**:
+In the Vercel dashboard → `dashboard` → **Settings → Environment Variables**:
 - `VITE_API_BASE` = `https://healthiq-api.onrender.com`
 
-Redeploy for the variable to take effect. The SPA rewrite rule in `vercel.json` handles React Router client-side routing.
+Then **Redeploy**. The SPA rewrite rule in `vercel.json` handles React Router.
 
-> **Note:** Render's free-tier web services spin down after 15 min of inactivity. The first request after sleep takes ~30 s to cold-start. Upgrade to Starter ($7/mo) to keep it always-on.
+**Frontend live at:** https://dashboard-black-psi-49.vercel.app
+
+> **Note:** Render free-tier web services spin down after 15 min of inactivity; the first request after sleep takes ~30 s. Upgrade to Starter ($7/mo) for always-on.
 
 ---
 
