@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { fetchReports, fetchReport, generateReport } from '../lib/api'
 import type { ReportMeta, ReportFull } from '../types'
 
@@ -251,6 +252,7 @@ export default function Reports() {
                 </div>
                 <div style={{ '--md-body': '#C8D6F0' } as React.CSSProperties}>
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       h1: ({ children }) => (
                         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#E2EAF8', margin: '0 0 16px', borderBottom: '1px solid #1D2940', paddingBottom: 12 }}>
@@ -295,6 +297,47 @@ export default function Reports() {
                       ),
                       hr: () => (
                         <hr style={{ border: 'none', borderTop: '1px solid #1D2940', margin: '20px 0' }} />
+                      ),
+                      table: ({ children }) => (
+                        <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                          <table style={{
+                            width: '100%', borderCollapse: 'collapse',
+                            fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
+                          }}>
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead style={{ background: 'rgba(93,202,165,0.10)' }}>
+                          {children}
+                        </thead>
+                      ),
+                      tbody: ({ children }) => (
+                        <tbody>{children}</tbody>
+                      ),
+                      tr: ({ children }) => (
+                        <tr style={{ borderBottom: '1px solid #1D2940' }}>
+                          {children}
+                        </tr>
+                      ),
+                      th: ({ children }) => (
+                        <th style={{
+                          padding: '8px 12px', textAlign: 'left',
+                          color: '#5DCAA5', fontWeight: 600,
+                          borderBottom: '1px solid rgba(93,202,165,0.25)',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td style={{
+                          padding: '7px 12px', color: '#C8D6F0',
+                          borderBottom: '1px solid #151E30',
+                        }}>
+                          {children}
+                        </td>
                       ),
                     }}
                   >
