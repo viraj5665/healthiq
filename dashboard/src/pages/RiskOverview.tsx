@@ -39,6 +39,9 @@ function AddPatientModal({ onClose, onSuccess }: ModalProps) {
   const [form, setForm] = useState<ManualPatientIn>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Ref guard: state updates are async, so use a ref to synchronously block
+  // duplicate submissions before the disabled button re-renders.
+  const inFlight = useRef(false)
 
   function set(k: keyof ManualPatientIn, v: string | number) {
     setForm(prev => ({ ...prev, [k]: v }))
@@ -46,11 +49,13 @@ function AddPatientModal({ onClose, onSuccess }: ModalProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (inFlight.current) return
     if (!form.date_of_birth) { setError('Date of birth is required'); return }
     if (form.num_er_visits > form.num_encounters) {
       setError('ER visits cannot exceed total encounters'); return
     }
     setError(null)
+    inFlight.current = true
     setSubmitting(true)
     try {
       const result = await createManualPatient(form)
@@ -58,6 +63,7 @@ function AddPatientModal({ onClose, onSuccess }: ModalProps) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Submission failed')
     } finally {
+      inFlight.current = false
       setSubmitting(false)
     }
   }
