@@ -1,6 +1,6 @@
 """
 Apply all SQL migrations in order. Idempotent — safe to re-run.
-Used by Railway's startCommand before uvicorn boots.
+Used by Render's startCommand before uvicorn boots.
 """
 
 import os
@@ -22,7 +22,13 @@ conn.autocommit = True
 cur = conn.cursor()
 
 migration_dir = os.path.join(os.path.dirname(__file__), "..", "infra", "migrations")
-files = sorted(glob.glob(os.path.join(migration_dir, "*.sql")))
+all_sql = glob.glob(os.path.join(migration_dir, "*.sql"))
+
+# init.sql must run first (enables uuid-ossp extension + base schema);
+# then numbered files in ascending order
+init   = [f for f in all_sql if os.path.basename(f) == "init.sql"]
+others = sorted(f for f in all_sql if os.path.basename(f) != "init.sql")
+files  = init + others
 
 for path in files:
     name = os.path.basename(path)

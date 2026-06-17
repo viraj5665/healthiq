@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS patients (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_patients_mrn       ON patients(mrn);
-CREATE INDEX idx_patients_last_name ON patients USING gin(last_name gin_trgm_ops);
-CREATE INDEX idx_patients_birth     ON patients(birth_date);
+CREATE INDEX IF NOT EXISTS idx_patients_mrn       ON patients(mrn);
+CREATE INDEX IF NOT EXISTS idx_patients_last_name ON patients USING gin(last_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_patients_birth     ON patients(birth_date);
 
 -- ── Encounters ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS encounters (
@@ -49,9 +49,9 @@ CREATE TABLE IF NOT EXISTS encounters (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_encounters_patient   ON encounters(patient_id);
-CREATE INDEX idx_encounters_status    ON encounters(status);
-CREATE INDEX idx_encounters_start     ON encounters(start_time DESC);
+CREATE INDEX IF NOT EXISTS idx_encounters_patient   ON encounters(patient_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_status    ON encounters(status);
+CREATE INDEX IF NOT EXISTS idx_encounters_start     ON encounters(start_time DESC);
 
 -- ── Observations ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS observations (
@@ -75,11 +75,11 @@ CREATE TABLE IF NOT EXISTS observations (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_observations_patient   ON observations(patient_id);
-CREATE INDEX idx_observations_encounter ON observations(encounter_id);
-CREATE INDEX idx_observations_code      ON observations(code);
-CREATE INDEX idx_observations_time      ON observations(effective_time DESC);
-CREATE INDEX idx_observations_category  ON observations(category);
+CREATE INDEX IF NOT EXISTS idx_observations_patient   ON observations(patient_id);
+CREATE INDEX IF NOT EXISTS idx_observations_encounter ON observations(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_observations_code      ON observations(code);
+CREATE INDEX IF NOT EXISTS idx_observations_time      ON observations(effective_time DESC);
+CREATE INDEX IF NOT EXISTS idx_observations_category  ON observations(category);
 
 -- ── Risk Scores ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS risk_scores (
@@ -95,10 +95,10 @@ CREATE TABLE IF NOT EXISTS risk_scores (
     encounter_id    UUID REFERENCES encounters(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_risk_scores_patient   ON risk_scores(patient_id);
-CREATE INDEX idx_risk_scores_type      ON risk_scores(score_type);
-CREATE INDEX idx_risk_scores_level     ON risk_scores(risk_level);
-CREATE INDEX idx_risk_scores_computed  ON risk_scores(computed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_risk_scores_patient   ON risk_scores(patient_id);
+CREATE INDEX IF NOT EXISTS idx_risk_scores_type      ON risk_scores(score_type);
+CREATE INDEX IF NOT EXISTS idx_risk_scores_level     ON risk_scores(risk_level);
+CREATE INDEX IF NOT EXISTS idx_risk_scores_computed  ON risk_scores(computed_at DESC);
 
 -- ── Alerts ────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS alerts (
@@ -118,10 +118,10 @@ CREATE TABLE IF NOT EXISTS alerts (
     metadata        JSONB
 );
 
-CREATE INDEX idx_alerts_patient   ON alerts(patient_id);
-CREATE INDEX idx_alerts_status    ON alerts(status);
-CREATE INDEX idx_alerts_severity  ON alerts(severity);
-CREATE INDEX idx_alerts_triggered ON alerts(triggered_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_patient   ON alerts(patient_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_status    ON alerts(status);
+CREATE INDEX IF NOT EXISTS idx_alerts_severity  ON alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_alerts_triggered ON alerts(triggered_at DESC);
 
 -- ── Updated-at trigger ────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -132,10 +132,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_patients_updated_at ON patients;
 CREATE TRIGGER trg_patients_updated_at
     BEFORE UPDATE ON patients
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_encounters_updated_at ON encounters;
 CREATE TRIGGER trg_encounters_updated_at
     BEFORE UPDATE ON encounters
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
