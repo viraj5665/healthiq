@@ -26,13 +26,16 @@ class ScoringResult:
 
 
 class RiskScoringAgent:
-    def run(self, db: Session, patient_id: str | None = None) -> ScoringResult:
+    def run(self, db: Session, patient_id: str | None = None,
+            write_only_patient_id: str | None = None) -> ScoringResult:
         from api.models.risk_score import RiskScore
 
         t0 = time.monotonic()
         result = ScoringResult()
 
         # ── 1. load data ───────────────────────────────────────────────────
+        # Always load all patients for training (write_only_patient_id limits
+        # which score rows are written, but training uses the full dataset).
         patients, encounters, observations = load_patient_data(db, patient_id)
 
         if not patients:
@@ -69,6 +72,8 @@ class RiskScoringAgent:
         # ── 4. write risk_scores ───────────────────────────────────────────
         risk_level_counts: dict[str, int] = {}
         for i, row in df.iterrows():
+            if write_only_patient_id and str(row["patient_id"]) != write_only_patient_id:
+                continue
             try:
                 prob = float(probs[i])
                 level = classify_risk(prob)

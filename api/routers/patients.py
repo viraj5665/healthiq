@@ -88,8 +88,10 @@ def create_manual_patient(body: ManualPatientIn, db: Session = Depends(get_db)):
         db.add(enc)
     db.commit()
 
-    # Retrain on all patients (including the new one) and write scores
-    result = RiskScoringAgent().run(db)
+    # Retrain on all patients for model quality, but only write the score
+    # for this new patient — avoids bulk-inserting scores for every previously
+    # unscored patient in the DB when the manual endpoint is called.
+    result = RiskScoringAgent().run(db, write_only_patient_id=str(patient.id))
     if result.error_log and not result.patients_scored:
         raise HTTPException(status_code=500, detail="; ".join(result.error_log))
 
