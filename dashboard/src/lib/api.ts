@@ -82,6 +82,12 @@ export async function generateReport(): Promise<ReportFull> {
   return body
 }
 
+export async function fetchHealth(): Promise<{ status: string; latency_ms: number }> {
+  const res = await fetch(`${BASE}/health`)
+  if (!res.ok) throw new Error(`${res.status}`)
+  return res.json()
+}
+
 export const RISK_ORDER: Record<string, number> = {
   critical: 4, high: 3, moderate: 2, low: 1,
 }
